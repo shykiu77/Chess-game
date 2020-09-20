@@ -77,8 +77,6 @@ function notJumpingPieces(piecePos,tilePos,pieces){
     if(pieces[tileY][tileX] && pieces[tileY][tileX].color == pieceColor)
         return false
 
-
-    //TODO: pawn case + En Passant
     if(pieces[pieceY][pieceX].type === 'pawn'){
         if(tileX - pieceX !== 0){
             if(!pieces[tileY][tileX]){
@@ -100,7 +98,7 @@ function isRightTurn(piece,turn){
     return piece.color === turn
 }
 
-function isInCheck(piecePos,tilePos,pieces,isEnPassant){
+function isInCheck(piecePos,tilePos,pieces,isEnPassant,turn){
     const [pieceY,pieceX] = piecePos.split(',').map(pos => parseInt(pos,10))
     const [tileY,tileX] = tilePos.split(',').map(pos => parseInt(pos,10))
 
@@ -110,8 +108,18 @@ function isInCheck(piecePos,tilePos,pieces,isEnPassant){
         const direction = pieces[tileY][tileX].color === 'white' ? 1 : -1
         delete pieces[tileY+direction][tileX]
     }
-
-    return false
+    let kingPos
+    pieces.forEach(line => line.forEach(piece => {
+        if(piece && piece.type === 'king' && piece.color === turn)
+            kingPos = piece.position
+    }))
+    isChecked = false
+    pieces.forEach(line => line.forEach(piece => {
+        if(piece && piece.color !== turn){
+            isChecked = isChecked || (isValidMovement(piece.position,kingPos,piece) && notJumpingPieces(piece.position,kingPos,pieces))
+        }
+    }))
+    return isChecked
 }
 
 class Piece{
@@ -196,7 +204,7 @@ class Board{
                     const piece = pieces[position.split(',')[0]][position.split(',')[1]]
                     const isEnPassant = piece.type === 'pawn' && j - position.split(',')[1] !== 0 && !pieces[i][j]
 
-                    if(isValidMovement(position,`${i},${j}`,piece) && notJumpingPieces(position,`${i},${j}`,pieces) && isRightTurn(piece,turn) && !isInCheck(position,`${i},${j}`, JSON.parse(JSON.stringify(pieces)),isEnPassant)){
+                    if(isValidMovement(position,`${i},${j}`,piece) && notJumpingPieces(position,`${i},${j}`,pieces) && isRightTurn(piece,turn) && !isInCheck(position,`${i},${j}`, JSON.parse(JSON.stringify(pieces)),isEnPassant,turn)){
                         
                         removeEnPassant(pieces)
                         if(piece.type === 'pawn' && Math.abs(position.split(',')[0] - i) === 2)
