@@ -1,0 +1,38 @@
+[gameArea]{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+}
+
+.board{
+    position: relative;
+    top: 0;
+    height: 480;
+    width: 480px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    border: 1px solid black;
+}
+
+.board .line{
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+}
+
+
+.board .line .tile{
+    display:flex;
+    align-items: center;
+    height: 60px;
+    width: 60px;
+    background: linear-gradient(90deg, rgba(238,238,210,1) 0%, rgba(118,150,86,1) 100%);
+}
+
+.piece{
+    height: 60px;
+    width: 60px;
+    z-index: 100;
+}
