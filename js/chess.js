@@ -1,6 +1,4 @@
 /*TODO: 
-*check checking
-*castling
 *promoting
 *stalemate and checkmating
 */
@@ -50,7 +48,7 @@ function isValidMovement(piecePos,tilePos,piece){
         case 'queen':
             return (deltaX === deltaY && deltaX > 0) || ((deltaX === 0 && deltaY > 0) || (deltaY === 0 &&  deltaX > 0))
         case 'king':
-            return deltaX <= 1 && deltaY <= 1 && (deltaX > 0 || deltaY > 0) 
+            return (deltaX <= 1 && deltaY <= 1 && (deltaX > 0 || deltaY > 0)) || (deltaX === 2 && deltaY === 0)
         default:
             return false
     }
@@ -69,7 +67,7 @@ function notJumpingPieces(piecePos,tilePos,pieces){
 
     const pieceColor = pieces[pieceY][pieceX].color
 
-    if(deltaX === deltaY || (deltaX === 0 || deltaY === 0)){
+    if(deltaX === deltaY || deltaX === 0 || deltaY === 0){
         for(let i = 1;i<(deltaX || deltaY);i++)
             if(pieces[pieceY + i*directionY][pieceX + i*directionX])
                 return false
@@ -90,30 +88,48 @@ function notJumpingPieces(piecePos,tilePos,pieces){
                 return false
         }
     }
+    if(pieces[pieceY][pieceX].type === 'king' && deltaX === 2)
+        if(pieceX < 3 && pieces[pieceY][1])
+            return false
+    
 
     return true
 }
 
 function isRightTurn(piece,turn){
+    return true
     return piece.color === turn
 }
 
-function isInCheck(piecePos,tilePos,pieces,isEnPassant,turn){
+function isInCheck(piecePos,tilePos,pieces,isEnPassant,isCastling,turn){
     const [pieceY,pieceX] = piecePos.split(',').map(pos => parseInt(pos,10))
     const [tileY,tileX] = tilePos.split(',').map(pos => parseInt(pos,10))
 
     pieces[tileY][tileX] = pieces[pieceY][pieceX]
+    pieces[tileY][tileX].position = tilePos
+    pieces[tileY][tileX].hasMoved = true
     delete pieces[pieceY][pieceX]
+    
+
     if(isEnPassant){
         const direction = pieces[tileY][tileX].color === 'white' ? 1 : -1
         delete pieces[tileY+direction][tileX]
     }
+    if(isCastling){
+        const newX = tileX < 3 ? 3 : 5
+        const oldX = tileX < 3 ? 0 : 7
+        pieces[tileY][newX] =  pieces[tileY][oldX]
+        delete pieces[tileY][oldX]
+        pieces[tileY][newX].position = `${tileY},${newX}`
+    }
+
     let kingPos
     pieces.forEach(line => line.forEach(piece => {
         if(piece && piece.type === 'king' && piece.color === turn)
             kingPos = piece.position
     }))
-    isChecked = false
+
+    let isChecked = false
     pieces.forEach(line => line.forEach(piece => {
         if(piece && piece.color !== turn){
             isChecked = isChecked || (isValidMovement(piece.position,kingPos,piece) && notJumpingPieces(piece.position,kingPos,pieces))
@@ -200,11 +216,13 @@ class Board{
 
                 tiles[i][j].element.ondragover = e => e.preventDefault()
                 tiles[i][j].element.ondrop = function(e){
+                    console.log(pieces)
                     const position = e.dataTransfer.getData('position')
                     const piece = pieces[position.split(',')[0]][position.split(',')[1]]
                     const isEnPassant = piece.type === 'pawn' && j - position.split(',')[1] !== 0 && !pieces[i][j]
+                    const isCastling = piece.type === 'king' && Math.abs(j - position.split(',')[1]) === 2
 
-                    if(isValidMovement(position,`${i},${j}`,piece) && notJumpingPieces(position,`${i},${j}`,pieces) && isRightTurn(piece,turn) && !isInCheck(position,`${i},${j}`, JSON.parse(JSON.stringify(pieces)),isEnPassant,turn)){
+                    if(isValidMovement(position,`${i},${j}`,piece) && notJumpingPieces(position,`${i},${j}`,pieces) && isRightTurn(piece,turn) && !isInCheck(position,`${i},${j}`, JSON.parse(JSON.stringify(pieces)),isEnPassant,isCastling,turn)){
                         
                         removeEnPassant(pieces)
                         if(piece.type === 'pawn' && Math.abs(position.split(',')[0] - i) === 2)
@@ -224,7 +242,15 @@ class Board{
                             clearChild(tiles[i+direction][j].element)
                             delete pieces[i+direction][j]
                         }
-
+                        if(isCastling){
+                            const newX = j < 3 ? 3 : 5
+                            const oldX = j < 3 ? 0 : 7
+                            pieces[i][newX] =  pieces[i][oldX]
+                            delete pieces[i][oldX]
+                            pieces[i][newX].position = `${i},${newX}`
+                            clearChild(tiles[i][newX])
+                            tiles[i][newX].element.appendChild(pieces[i][newX].element)   
+                        }
                         turn = turn === 'white' ? 'black' : 'white'
                     }
                 }
