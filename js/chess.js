@@ -88,11 +88,18 @@ function notJumpingPieces(piecePos,tilePos,pieces){
                 return false
         }
     }
-    if(pieces[pieceY][pieceX].type === 'king' && deltaX === 2)
-        if(pieceX < 3 && pieces[pieceY][1])
+    if(pieces[pieceY][pieceX].type === 'king' && deltaX === 2){
+        if(pieces[pieceY][pieceX].hasMoved)
             return false
-    
-
+        if(tileX < 3){
+            if(pieces[pieceY][1] || !pieces[pieceY][0] || pieces[pieceY][0].type !== 'rook' || pieces[pieceY][0].hasMoved)
+                return false
+        }
+        else{
+            if(!pieces[pieceY][7] || pieces[pieceY][7].type !== 'rook' || pieces[pieceY][7].hasMoved)
+                return false
+        }
+    }
     return true
 }
 
@@ -216,12 +223,11 @@ class Board{
 
                 tiles[i][j].element.ondragover = e => e.preventDefault()
                 tiles[i][j].element.ondrop = function(e){
-                    console.log(pieces)
                     const position = e.dataTransfer.getData('position')
                     const piece = pieces[position.split(',')[0]][position.split(',')[1]]
                     const isEnPassant = piece.type === 'pawn' && j - position.split(',')[1] !== 0 && !pieces[i][j]
                     const isCastling = piece.type === 'king' && Math.abs(j - position.split(',')[1]) === 2
-
+                    console.log(pieces)
                     if(isValidMovement(position,`${i},${j}`,piece) && notJumpingPieces(position,`${i},${j}`,pieces) && isRightTurn(piece,turn) && !isInCheck(position,`${i},${j}`, JSON.parse(JSON.stringify(pieces)),isEnPassant,isCastling,turn)){
                         
                         removeEnPassant(pieces)
@@ -248,6 +254,7 @@ class Board{
                             pieces[i][newX] =  pieces[i][oldX]
                             delete pieces[i][oldX]
                             pieces[i][newX].position = `${i},${newX}`
+                            pieces[i][newX].moved = true
                             clearChild(tiles[i][newX])
                             tiles[i][newX].element.appendChild(pieces[i][newX].element)   
                         }
