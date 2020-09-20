@@ -1,5 +1,4 @@
 /*TODO: 
-*turns
 *check checking
 *castling
 *promoting
@@ -92,6 +91,9 @@ function notJumpingPieces(piecePos,tilePos,pieces){
     return true
 }
 
+function isRightTurn(piece,turn){
+    return piece.color === turn
+}
 
 class Piece{
     constructor(type,color,position){
@@ -122,7 +124,7 @@ class Board{
         this.element = makeElement('div','board')
         const tiles = makeMatrix(8,8)
         const pieces = makeMatrix(8,8)
-        const turn = 'white'
+        let turn = 'white'
 
         for(let i=0;i<8;i++){
             for(let j=0;j<8;j++){
@@ -175,7 +177,7 @@ class Board{
                     const position = e.dataTransfer.getData('position')
                     const piece = pieces[position.split(',')[0]][position.split(',')[1]]
 
-                    if(isValidMovement(position,`${i},${j}`,piece) && notJumpingPieces(position,`${i},${j}`,pieces)){
+                    if(isValidMovement(position,`${i},${j}`,piece) && notJumpingPieces(position,`${i},${j}`,pieces) && isRightTurn(piece,turn)){
                     
                         const isEnPassant = piece.type === 'pawn' && j - position.split(',')[1] !== 0 && !pieces[i][j]
                         
@@ -197,6 +199,7 @@ class Board{
                             clearChild(tiles[i+direction][j].element)
                             delete pieces[i+direction][j]
                         }
+                        turn = turn === 'white' ? 'black' : 'white'
                     }
                 }
             }
