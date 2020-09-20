@@ -2,6 +2,7 @@
 *check checking
 *castling
 *promoting
+*stalemate and checkmating
 */
 const WHITE = 'rgb(238, 238, 210)'
 const BLACK = 'rgb(118, 150, 86)'
@@ -22,6 +23,10 @@ function makeMatrix(m,n){
 function clearChild(element){
     while(element.firstChild)
         element.removeChild(element.firstChild)
+}
+
+function removeEnPassant(pieces){
+    pieces.forEach(line => line.forEach(piece => piece.enPassantAble = false))
 }
 
 
@@ -78,7 +83,7 @@ function notJumpingPieces(piecePos,tilePos,pieces){
         if(tileX - pieceX !== 0){
             if(!pieces[tileY][tileX]){
                 const direction = pieceColor === 'white' ? 1 : -1
-                if(!pieces[pieceY][pieceX + direction] || pieces[pieceY][pieceX + direction].color === pieceColor || !pieces[pieceY][pieceX + direction].enPassantAble)
+                if(!pieces[tileY + direction][tileX] || pieces[tileY + direction][tileX].color === pieceColor || !pieces[tileY + direction][tileX].enPassantAble)
                     return false
             }
         }
@@ -93,6 +98,20 @@ function notJumpingPieces(piecePos,tilePos,pieces){
 
 function isRightTurn(piece,turn){
     return piece.color === turn
+}
+
+function isInCheck(piecePos,tilePos,pieces,isEnPassant){
+    const [pieceY,pieceX] = piecePos.split(',').map(pos => parseInt(pos,10))
+    const [tileY,tileX] = tilePos.split(',').map(pos => parseInt(pos,10))
+
+    pieces[tileY][tileX] = pieces[pieceY][pieceX]
+    delete pieces[pieceY][pieceX]
+    if(isEnPassant){
+        const direction = pieces[tileY][tileX].color === 'white' ? 1 : -1
+        delete pieces[tileY+direction][tileX]
+    }
+
+    return false
 }
 
 class Piece{
@@ -173,15 +192,13 @@ class Board{
 
                 tiles[i][j].element.ondragover = e => e.preventDefault()
                 tiles[i][j].element.ondrop = function(e){
-
                     const position = e.dataTransfer.getData('position')
                     const piece = pieces[position.split(',')[0]][position.split(',')[1]]
+                    const isEnPassant = piece.type === 'pawn' && j - position.split(',')[1] !== 0 && !pieces[i][j]
 
-                    if(isValidMovement(position,`${i},${j}`,piece) && notJumpingPieces(position,`${i},${j}`,pieces) && isRightTurn(piece,turn)){
-                    
-                        const isEnPassant = piece.type === 'pawn' && j - position.split(',')[1] !== 0 && !pieces[i][j]
+                    if(isValidMovement(position,`${i},${j}`,piece) && notJumpingPieces(position,`${i},${j}`,pieces) && isRightTurn(piece,turn) && !isInCheck(position,`${i},${j}`, JSON.parse(JSON.stringify(pieces)),isEnPassant)){
                         
-                        piece.enPassantAble = false
+                        removeEnPassant(pieces)
                         if(piece.type === 'pawn' && Math.abs(position.split(',')[0] - i) === 2)
                             piece.enPassantAble = true
 
@@ -199,6 +216,7 @@ class Board{
                             clearChild(tiles[i+direction][j].element)
                             delete pieces[i+direction][j]
                         }
+
                         turn = turn === 'white' ? 'black' : 'white'
                     }
                 }
