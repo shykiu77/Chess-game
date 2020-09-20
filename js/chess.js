@@ -1,5 +1,4 @@
 /*TODO: 
-*pawn case + En Passant
 *turns
 *check checking
 *castling
@@ -76,7 +75,19 @@ function notJumpingPieces(piecePos,tilePos,pieces){
 
 
     //TODO: pawn case + En Passant
-    
+    if(pieces[pieceY][pieceX].type === 'pawn'){
+        if(tileX - pieceX !== 0){
+            if(!pieces[tileY][tileX]){
+                const direction = pieceColor === 'white' ? 1 : -1
+                if(!pieces[pieceY][pieceX + direction] || pieces[pieceY][pieceX + direction].color === pieceColor || !pieces[pieceY][pieceX + direction].enPassantAble)
+                    return false
+            }
+        }
+        else{
+            if(pieces[tileY][tileX])
+                return false
+        }
+    }
 
     return true
 }
@@ -165,6 +176,8 @@ class Board{
                     const piece = pieces[position.split(',')[0]][position.split(',')[1]]
 
                     if(isValidMovement(position,`${i},${j}`,piece) && notJumpingPieces(position,`${i},${j}`,pieces)){
+                    
+                        const isEnPassant = piece.type === 'pawn' && j - position.split(',')[1] !== 0 && !pieces[i][j]
                         
                         piece.enPassantAble = false
                         if(piece.type === 'pawn' && Math.abs(position.split(',')[0] - i) === 2)
@@ -172,13 +185,18 @@ class Board{
 
                         piece.position = `${i},${j}` 
                         piece.hasMoved = true
+
                         pieces[i][j] = piece
                         delete pieces[position.split(',')[0]][position.split(',')[1]]
 
                        
                         clearChild(tiles[i][j].element)
                         tiles[i][j].element.appendChild(piece.element)
-                        
+                        if(isEnPassant){
+                            const direction = piece.color === 'white' ? 1 : -1
+                            clearChild(tiles[i+direction][j].element)
+                            delete pieces[i+direction][j]
+                        }
                     }
                 }
             }
