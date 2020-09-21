@@ -52,12 +52,30 @@ class Tile{
     }
 }
 
+function makePromotion(callback,piecePos){
+    const select = makeElement('div','promotionBar')
+    select.style.left = `calc(30% + ${piecePos.split(',')[1]*60+1}px)`
+    select.style.top = 'calc(10% - 31px)'
+    const pieceList = new Array()
+    pieceList.push(new Piece('queen','white'))
+    pieceList.push(new Piece('rook','white'))
+    pieceList.push(new Piece('bishop','white'))
+    pieceList.push(new Piece('knight','white'))
+    pieceList.forEach(piece => piece.element.onclick = e => {
+        callback(piece.type)
+    })
+
+    pieceList.forEach(piece => select.appendChild(piece.element))
+    return select
+}
 
 class Board{
-    constructor(){
+    constructor(parentElement){
         this.element = makeElement('div','board')
+        this.parentElement = parentElement
         const tiles = makeMatrix(8,8)
         const pieces = makeMatrix(8,8)
+        let waitForPromotion = false
         let turn = 'white'
 
         for(let i=0;i<8;i++){
@@ -87,7 +105,7 @@ class Board{
                     const piece = pieces[position.split(',')[0]][position.split(',')[1]]
                     const isEnPassant = piece.type === 'pawn' && j - position.split(',')[1] !== 0 && !pieces[i][j]
                     const isCastling = piece.type === 'king' && Math.abs(j - position.split(',')[1]) === 2
-                    if(this.isValidMovement(position,`${i},${j}`,piece) && this.notJumpingPieces(position,`${i},${j}`,pieces) && this.isRightTurn(piece,turn) && !this.isInCheck(position,`${i},${j}`, JSON.parse(JSON.stringify(pieces)),isEnPassant,isCastling,turn)){
+                    if(!waitForPromotion && this.isValidMovement(position,`${i},${j}`,piece) && this.notJumpingPieces(position,`${i},${j}`,pieces) && this.isRightTurn(piece,turn) && !this.isInCheck(position,`${i},${j}`, JSON.parse(JSON.stringify(pieces)),isEnPassant,isCastling,turn)){
 
                         this.removeEnPassantAble(pieces)
                         if(piece.type === 'pawn' && Math.abs(position.split(',')[0] - i) === 2)
@@ -109,7 +127,12 @@ class Board{
                         if(piece.type === 'pawn'){
                             const pieceY = piece.position.split(',')[0]
                             if(piece.color === 'black' && pieceY == 7 || piece.color === 'white' && pieceY == 0){
-                                piece.promove('queen')
+                                waitForPromotion = true
+                                this.parentElement.appendChild(makePromotion( newType => {
+                                    piece.promove(newType)
+                                    this.parentElement.removeChild(this.parentElement.querySelector('.promotionBar'))
+                                    waitForPromotion = false
+                                },piece.position))
                             }
                         }
                         turn = turn === 'white' ? 'black' : 'white'
@@ -117,6 +140,7 @@ class Board{
                 }
             }
         }
+        this.parentElement.appendChild(this.element)
     }
     createPieces(pieces){
         for(let i=0;i<8;i++){
@@ -251,7 +275,6 @@ class Board{
     }
     
     isRightTurn(piece,turn){
-        //return true
         return piece.color === turn
     }
     
@@ -299,8 +322,8 @@ class Board{
 
 
 
-let board = new Board()
-document.querySelector('[gameArea]').appendChild(board.element)
+let board = new Board(document.querySelector('[gameArea]'))
+
 
 document.addEventListener('keypress',e =>{
     if(e.key === 'r'){

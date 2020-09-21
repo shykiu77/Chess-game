@@ -7,7 +7,8 @@
 
 .board{
     position: relative;
-    top: 0;
+    top: 10%;
+    left: 30%;
     height: 480;
     width: 480px;
     display: flex;
@@ -24,15 +25,30 @@
 
 
 .board .line .tile{
-    display:flex;
+    display: flex;
     align-items: center;
     height: 60px;
     width: 60px;
     background: linear-gradient(90deg, rgba(238,238,210,1) 0%, rgba(118,150,86,1) 100%);
 }
 
-.piece{
+.tile .piece{
     height: 60px;
     width: 60px;
     z-index: 100;
+}
+
+.promotionBar{
+    display: flex;
+    position: absolute;
+    height: 30px;
+    width: 120px;
+    border: 1px solid black;
+    z-index: 50;
+}
+
+.promotionBar .piece{
+    height: 30px;
+    width: 30px;
+    resize: both;
 }
