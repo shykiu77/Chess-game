@@ -1,6 +1,5 @@
 /*TODO: 
-*modularize check checking function
-*stalemate and checkmating
+*promoting
 */
 const WHITE = 'rgb(238, 238, 210)'
 const BLACK = 'rgb(118, 150, 86)'
@@ -108,6 +107,7 @@ function notJumpingPieces(piecePos,tilePos,pieces){
 }
 
 function isRightTurn(piece,turn){
+    return true
     return piece.color === turn
 }
 
@@ -166,6 +166,11 @@ class Piece{
 
         this.element.draggable = true
         this.element.ondragstart = e => e.dataTransfer.setData('position',this.position)
+    }
+
+    promove(type){
+        this.type = type
+        this.element.src = `./imgs/${this.color}_${this.type}.png`
     }
 }
 
@@ -265,12 +270,20 @@ class Board{
                             clearChild(tiles[i][newX])
                             tiles[i][newX].element.appendChild(pieces[i][newX].element)   
                         }
+
+                        if(piece.type === 'pawn'){
+                            const pieceY = piece.position.split(',')[0]
+                            if(piece.color === 'black' && pieceY == 7 || piece.color === 'white' && pieceY == 0){
+                                piece.promove('queen')
+                            }
+                        }
                         turn = turn === 'white' ? 'black' : 'white'
                     }
                 }
             }
         }
     }
+   
 }
 
 
