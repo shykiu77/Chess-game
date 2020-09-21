@@ -323,12 +323,3 @@ class Board{
 
 
 let board = new Board(document.querySelector('[gameArea]'))
-
-
-document.addEventListener('keypress',e =>{
-    if(e.key === 'r'){
-        board = new Board()
-        clearChild(document.querySelector('[gameArea]'))
-        document.querySelector('[gameArea]').appendChild(board.element)
-    }
-})
