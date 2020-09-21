@@ -1,5 +1,5 @@
 /*TODO: 
-*promoting
+*modularize check checking function
 *stalemate and checkmating
 */
 const WHITE = 'rgb(238, 238, 210)'
@@ -91,6 +91,7 @@ function notJumpingPieces(piecePos,tilePos,pieces){
     if(pieces[pieceY][pieceX].type === 'king' && deltaX === 2){
         if(pieces[pieceY][pieceX].hasMoved)
             return false
+        
         if(tileX < 3){
             if(pieces[pieceY][1] || !pieces[pieceY][0] || pieces[pieceY][0].type !== 'rook' || pieces[pieceY][0].hasMoved)
                 return false
@@ -99,15 +100,34 @@ function notJumpingPieces(piecePos,tilePos,pieces){
             if(!pieces[pieceY][7] || pieces[pieceY][7].type !== 'rook' || pieces[pieceY][7].hasMoved)
                 return false
         }
+
+        if(checkForChecks(pieces,pieces[pieceY][pieceX].color))
+            return false
     }
     return true
 }
 
 function isRightTurn(piece,turn){
-    return true
     return piece.color === turn
 }
 
+function checkForChecks(pieces,color){
+    let kingPos
+    pieces.forEach(line => line.forEach(piece => {
+        if(piece && piece.type === 'king' && piece.color === color)
+            kingPos = piece.position
+    }))
+
+    let isChecked = false
+    pieces.forEach(line => line.forEach(piece => {
+        if(piece && piece.color !== color){
+            isChecked = isChecked || (isValidMovement(piece.position,kingPos,piece) && notJumpingPieces(piece.position,kingPos,pieces))
+        }
+    }))
+    return isChecked
+}
+
+//TODO: modularize check checking function
 function isInCheck(piecePos,tilePos,pieces,isEnPassant,isCastling,turn){
     const [pieceY,pieceX] = piecePos.split(',').map(pos => parseInt(pos,10))
     const [tileY,tileX] = tilePos.split(',').map(pos => parseInt(pos,10))
@@ -130,19 +150,7 @@ function isInCheck(piecePos,tilePos,pieces,isEnPassant,isCastling,turn){
         pieces[tileY][newX].position = `${tileY},${newX}`
     }
 
-    let kingPos
-    pieces.forEach(line => line.forEach(piece => {
-        if(piece && piece.type === 'king' && piece.color === turn)
-            kingPos = piece.position
-    }))
-
-    let isChecked = false
-    pieces.forEach(line => line.forEach(piece => {
-        if(piece && piece.color !== turn){
-            isChecked = isChecked || (isValidMovement(piece.position,kingPos,piece) && notJumpingPieces(piece.position,kingPos,pieces))
-        }
-    }))
-    return isChecked
+    return checkForChecks(pieces,turn)
 }
 
 class Piece{
@@ -227,7 +235,6 @@ class Board{
                     const piece = pieces[position.split(',')[0]][position.split(',')[1]]
                     const isEnPassant = piece.type === 'pawn' && j - position.split(',')[1] !== 0 && !pieces[i][j]
                     const isCastling = piece.type === 'king' && Math.abs(j - position.split(',')[1]) === 2
-                    console.log(pieces)
                     if(isValidMovement(position,`${i},${j}`,piece) && notJumpingPieces(position,`${i},${j}`,pieces) && isRightTurn(piece,turn) && !isInCheck(position,`${i},${j}`, JSON.parse(JSON.stringify(pieces)),isEnPassant,isCastling,turn)){
                         
                         removeEnPassant(pieces)
